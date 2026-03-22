@@ -1,0 +1,192 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ------------------------------------------------------
+// User and Identity
+// ------------------------------------------------------
+enum Role {
+  LANDLORD
+  TENANT
+  VENDOR
+  ADMIN
+}
+
+model User {
+  id                   String    @id @default(uuid())
+  email                String    @unique
+  name                 String
+  passwordHash         String?
+  role                 Role      @default(TENANT)
+  phone                String?
+  
+  // Verification Flags (10% of score)
+  isBvnVerified        Boolean   @default(false)
+  isGovIdVerified      Boolean   @default(false)
+  isBiometricVerified  Boolean   @default(false)
+
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  // Relationships
+  properties           Property[]           @relation("LandlordProperties")
+  leases               Lease[]              @relation("TenantLeases")
+  maintenanceRequests  MaintenanceRequest[] @relation("TenantRequests")
+  assignedMaintenance  MaintenanceRequest[] @relation("VendorAssignments")
+  tenantScore          TenantScore?
+  payments             Payment[]            @relation("UserPayments")
+}
+
+// ------------------------------------------------------
+// Property Management
+// ------------------------------------------------------
+model Property {
+  id          String   @id @default(uuid())
+  name        String
+  address     String
+  city        String?
+  state       String?
+  type        String?  // Commercial, Residential
+  landlordId  String
+  landlord    User     @relation("LandlordProperties", fields: [landlordId], references: [id])
+  units       Unit[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Unit {
+  id                  String               @id @default(uuid())
+  propertyId          String
+  property            Property             @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  unitNumber          String
+  rentAmount          Float
+  status              String               @default("VACANT") // VACANT, OCCUPIED, MAINTENANCE
+  leases              Lease[]
+  maintenanceRequests MaintenanceRequest[]
+
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+}
+
+// ------------------------------------------------------
+// Leasing & Escrow
+// ------------------------------------------------------
+model Lease {
+  id             String    @id @default(uuid())
+  tenantId       String
+  tenant         User      @relation("TenantLeases", fields: [tenantId], references: [id])
+  unitId         String
+  unit           Unit      @relation(fields: [unitId], references: [id])
+  startDate      DateTime
+  endDate        DateTime
+  status         String    @default("ACTIVE") // ACTIVE, TERMINATED, PENDING
+  rentAmount     Float
+  autoPaySetup   Boolean   @default(false)
+
+  payments       Payment[]
+  escrow         Escrow?
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+// ------------------------------------------------------
+// Tenant Profiling & Scoring
+// ------------------------------------------------------
+model TenantScore {
+  id               String   @id @default(uuid())
+  tenantId         String   @unique
+  tenant           User     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Weighted Component Scores (0-100)
+  identityScore    Float    @default(0)   // 10%
+  financialScore   Float    @default(0)   // 40%
+  behavioralScore  Float    @default(0)   // 30%
+  engagementScore  Float    @default(0)   // 10%
+
+  totalScore       Float    @default(0)   // Max 100
+
+  // Optional sub-metrics for UI breakdown
+  paymentStreaks   Int      @default(0)
+  platformActivity Int      @default(0)   
+
+  lastUpdated      DateTime @updatedAt
+  createdAt        DateTime @default(now())
+}
+
+// ------------------------------------------------------
+// Finances, Payments & Escrow
+// ------------------------------------------------------
+enum PaymentType {
+  RENT
+  MAINTENANCE
+  ESCROW
+  FEE
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+model Payment {
+  id             String        @id @default(uuid())
+  amount         Float
+  type           PaymentType
+  status         PaymentStatus @default(PENDING)
+  reference      String?       @unique // E.g., Paystack Ref
+  
+  tenantId       String
+  tenant         User          @relation("UserPayments", fields: [tenantId], references: [id])
+  leaseId        String?
+  lease          Lease?        @relation(fields: [leaseId], references: [id])
+
+  platformFee    Float         @default(0) // Platform cut
+  maintenanceFee Float         @default(0) // Vendor cut
+
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model Escrow {
+  id          String   @id @default(uuid())
+  leaseId     String   @unique
+  lease       Lease    @relation(fields: [leaseId], references: [id], onDelete: Cascade)
+  amount      Float
+  status      String   @default("HELD") // HELD, RELEASED_TO_TENANT, RELEASED_TO_LANDLORD
+  inspectionNotes String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ------------------------------------------------------
+// Maintenance
+// ------------------------------------------------------
+model MaintenanceRequest {
+  id          String   @id @default(uuid())
+  description String
+  status      String   @default("OPEN") // OPEN, IN_PROGRESS, RESOLVED, CLOSED
+  cost        Float?
+  
+  unitId      String
+  unit        Unit     @relation(fields: [unitId], references: [id])
+  tenantId    String
+  tenant      User     @relation("TenantRequests", fields: [tenantId], references: [id])
+  vendorId    String?
+  vendor      User?    @relation("VendorAssignments", fields: [vendorId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
