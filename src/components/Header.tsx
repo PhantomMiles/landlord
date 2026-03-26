@@ -1,58 +1,92 @@
-import { Search, Bell, Menu, FileText, CheckCircle2 } from "lucide-react";
+"use client";
 
-export function Header() {
+import { useState } from "react";
+import { Bell, MessageSquare, Search, ChevronDown, Settings, LogOut } from "lucide-react";
+import { ChatDrawer } from "@/components/ChatDrawer";
+import { getMockUser } from "@/lib/user-mock";
+import { logoutAction } from "@/app/actions/auth";
+
+export function Header({ role = "LANDLORD" }: { role?: "LANDLORD" | "TENANT" }) {
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const user = getMockUser(role);
+
   return (
-    <header className="h-20 bg-white border-b border-slate-100 flex items-center justify-between px-8 shadow-[0_4px_30px_rgba(0,0,0,0.03)] z-10 sticky top-0">
-      <div className="flex items-center gap-4 flex-1">
-        {/* Mobile menu toggle (hidden on desktop for MVP) */}
-        <button className="lg:hidden p-2 text-slate-400 hover:text-slate-600">
-          <Menu className="w-5 h-5" />
-        </button>
-        
-        <h1 className="text-2xl font-semibold text-slate-800 tracking-tight hidden lg:block">
-          Dashboard
-        </h1>
-        
-        {/* Action Pills */}
-        <div className="hidden lg:flex items-center gap-3 ml-8">
-          <button className="flex items-center gap-2 px-4 py-2 bg-slate-50 border border-slate-200 rounded-full text-sm font-medium text-slate-600 hover:bg-slate-100 hover:border-slate-300 transition-all">
-            <CheckCircle2 className="w-4 h-4 text-[#10b981]" />
-            <span>Verify Tenants</span>
-          </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-slate-50 border border-slate-200 rounded-full text-sm font-medium text-slate-600 hover:bg-slate-100 hover:border-slate-300 transition-all">
-            <FileText className="w-4 h-4 text-blue-500" />
-            <span>Review Leases</span>
-          </button>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-6">
-        {/* Global Search */}
-        <div className="relative group hidden sm:block">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#10b981] transition-colors" />
-          <input
-            type="text"
-            placeholder="Search properties, tenants..."
-            className="w-64 pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#10b981]/20 focus:border-[#10b981] transition-all"
+    <>
+      <header className="fixed top-0 right-0 left-64 h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 z-50 flex items-center justify-between px-8 transition-all">
+        {/* Search Area */}
+        <div className="relative group w-96">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#10b981] transition-colors" />
+          <input 
+            type="text" 
+            placeholder="Search properties, tenants, or payments..." 
+            className="w-full bg-slate-100/50 border-none rounded-xl py-2.5 pl-11 pr-4 text-sm focus:ring-2 focus:ring-[#10b981]/20 focus:bg-white transition-all outline-none text-slate-600 placeholder:text-slate-400"
           />
         </div>
 
-        {/* Notifications */}
-        <button className="relative p-2 text-slate-400 hover:text-slate-600 transition-colors">
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"></span>
-        </button>
+        {/* Right Actions */}
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2 pr-6 border-r border-slate-200">
+            <button 
+              onClick={() => setIsChatOpen(true)}
+              className="p-2.5 rounded-xl hover:bg-slate-100 text-slate-500 transition-all relative group"
+            >
+              <MessageSquare className="w-5 h-5 group-hover:scale-110 transition-transform" />
+              <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-[#10b981] rounded-full ring-2 ring-white"></span>
+            </button>
+            <button className="p-2.5 rounded-xl hover:bg-slate-100 text-slate-500 transition-all relative">
+              <Bell className="w-5 h-5" />
+              <span className="absolute top-2 right-2.5 w-2.5 h-2.5 bg-rose-500 rounded-full ring-2 ring-white"></span>
+            </button>
+          </div>
 
-        {/* Date/Context Selector */}
-        <div className="hidden sm:flex items-center gap-2 pl-6 border-l border-slate-200">
-          <span className="text-sm font-medium text-slate-500">Portfolio:</span>
-          <select className="bg-transparent text-sm font-semibold text-slate-800 outline-none cursor-pointer hover:bg-slate-50 py-1 px-2 rounded-lg transition-colors">
-            <option>All Properties</option>
-            <option>Commercial</option>
-            <option>Residential</option>
-          </select>
+          {/* User Card */}
+          <div className="relative">
+            <div 
+              onClick={() => setIsProfileOpen(!isProfileOpen)}
+              className="flex items-center gap-3 pl-2 cursor-pointer group"
+            >
+              <div className="text-right hidden sm:block">
+                <p className="text-sm font-bold text-slate-800 leading-none">{user.name}</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter mt-1">{role === "LANDLORD" ? "Portfolio Manager" : "Active Tenant"}</p>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden shadow-sm group-hover:shadow-md transition-all ring-2 ring-transparent group-hover:ring-[#10b981]/20">
+                <img src={user.avatar} alt="User Avatar" className="w-full h-full object-cover" />
+              </div>
+              <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isProfileOpen ? 'rotate-180' : ''}`} />
+            </div>
+
+            {/* Simple Dropdown */}
+            {isProfileOpen && (
+              <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 p-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                <button 
+                  onClick={() => setIsProfileOpen(false)}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-600 hover:bg-slate-50 rounded-xl transition-all"
+                >
+                  <Settings className="w-4 h-4" />
+                  Account Settings
+                </button>
+                <div className="h-px bg-slate-100 my-1 mx-2" />
+                <form action={logoutAction}>
+                  <button 
+                    type="submit"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-rose-500 hover:bg-rose-50 rounded-xl transition-all font-bold"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Log Out
+                  </button>
+                </form>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      <ChatDrawer 
+        isOpen={isChatOpen} 
+        onClose={() => setIsChatOpen(false)} 
+        role={role} 
+      />
+    </>
   );
 }
