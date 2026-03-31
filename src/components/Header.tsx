@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Bell, MessageSquare, Search, ChevronDown, Settings, LogOut } from "lucide-react";
 import { ChatDrawer } from "@/components/ChatDrawer";
 import { getMockUser } from "@/lib/user-mock";
-import { logoutAction } from "@/app/actions/auth";
+import { logoutAction } from "@/app/actions/actions-auth";
 
 export function Header({ role = "LANDLORD" }: { role?: "LANDLORD" | "TENANT" }) {
   const [isChatOpen, setIsChatOpen] = useState(false);
