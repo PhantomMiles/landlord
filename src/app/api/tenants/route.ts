@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { calculateTenantScore } from "@/lib/scoring";
+// import { calculateTenantScore } from "@/lib/scoring";
 
 /**
  * GET /api/tenants
