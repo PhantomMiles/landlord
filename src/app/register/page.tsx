@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-import { registerAction } from "@/app/actions/auth";
+import { registerAction } from "@/app/actions/actions-auth";
 
 export default function RegisterPage() {
   const [role, setRole] = useState<"LANDLORD" | "TENANT">("TENANT");
