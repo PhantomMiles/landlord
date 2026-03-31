@@ -1,7 +1,5 @@
 "use server";
 
-export const maxDuration = 30;  // ← add this line
-
 import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";

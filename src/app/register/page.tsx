@@ -1,5 +1,6 @@
 "use client";
 
+export const maxDuration = 30;
 import { useState } from "react";
 import Link from "next/link";
 import { Mail, Lock, User, ArrowRight, ShieldCheck, Building2, UserCircle2 } from "lucide-react";

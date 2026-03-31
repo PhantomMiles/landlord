@@ -1,5 +1,6 @@
 "use client";
 
+export const maxDuration = 30;
 import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
