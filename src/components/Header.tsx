@@ -3,13 +3,13 @@
 import { useState } from "react";
 import { Bell, MessageSquare, Search, ChevronDown, Settings, LogOut } from "lucide-react";
 import { ChatDrawer } from "@/components/ChatDrawer";
-import { getMockUser } from "@/lib/user-mock";
+import { getCurrentUser } from "@/lib/db";
 import { logoutAction } from "@/app/actions/actions-auth";
 
 export function Header({ role = "LANDLORD" }: { role?: "LANDLORD" | "TENANT" }) {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const user = getMockUser(role);
+  const user = getCurrentUser(role);
 
   return (
     <>
