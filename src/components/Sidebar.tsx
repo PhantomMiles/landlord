@@ -10,7 +10,8 @@ import {
   FileText,
   Settings,
   CreditCard,
-  Briefcase
+  Briefcase,
+  Shield
 } from "lucide-react";
 
 export function Sidebar({ role = "LANDLORD" }: { role?: "LANDLORD" | "TENANT" }) {
@@ -27,6 +28,7 @@ export function Sidebar({ role = "LANDLORD" }: { role?: "LANDLORD" | "TENANT" })
   ] : [
     { name: "My Dashboard", href: "/tenant/dashboard", icon: LayoutDashboard },
     { name: "My Payments", href: "/tenant/payments", icon: CreditCard },
+    { name: "Rent Shield", href: "/tenant/shield", icon: Shield },  
     { name: "Maintenance", href: "/tenant/maintenance", icon: Briefcase },
     { name: "My Lease", href: "/tenant/lease", icon: FileText },
     { name: "My Score", href: "/tenant/score", icon: Users },
