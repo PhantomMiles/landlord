@@ -1,16 +1,70 @@
-import { 
-  Users, 
-  Home, 
-  TrendingUp, 
-  Wallet,
-  MoreVertical,
-  Mail,
-  Phone,
-  ShieldCheck,
-  Building2
-} from "lucide-react";
+import { Users, Home, Wallet, Building2, TrendingUp, ShieldCheck, MoreVertical, Mail, Phone } from "lucide-react";
+import { getCurrentUser } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { formatNaira } from "@/lib/fees";
 
-export default function DashboardPage() {
+async function getLandlordData(landlordId: string) {
+  const [propertyCount, tenantCount, recentPayments, escrowTotal, topTenants, maintenanceOpen] = await Promise.all([
+    db.property.count({ where: { landlordId } }),
+    db.user.count({
+      where: {
+        role: "TENANT",
+        leases: { some: { unit: { property: { landlordId } }, status: "ACTIVE" } },
+      },
+    }),
+    db.payment.findMany({
+      where: {
+        status: "COMPLETED",
+        type: "RENT",
+        lease: { unit: { property: { landlordId } } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+      select: { amount: true, platformFee: true, createdAt: true },
+    }),
+    db.escrow.aggregate({
+      _sum: { amount: true },
+      where: { status: "HELD", lease: { unit: { property: { landlordId } } } },
+    }),
+    db.user.findMany({
+      where: {
+        role: "TENANT",
+        leases: { some: { status: "ACTIVE", unit: { property: { landlordId } } } },
+        tenantScore: { isNot: null },
+      },
+      include: {
+        tenantScore: true,
+        leases: {
+          where: { status: "ACTIVE" },
+          include: { unit: { include: { property: { select: { name: true } } } } },
+          take: 1,
+        },
+      },
+      orderBy: { tenantScore: { totalScore: "desc" } },
+      take: 3,
+    }),
+    db.maintenanceRequest.count({
+      where: { status: { in: ["OPEN", "IN_PROGRESS"] }, unit: { property: { landlordId } } },
+    }),
+  ]);
+
+  const monthlyRevenue = recentPayments.reduce((sum, p) => sum + p.amount, 0);
+  const escrowBalance = escrowTotal._sum.amount ?? 0;
+
+  return { propertyCount, tenantCount, monthlyRevenue, escrowBalance, topTenants, maintenanceOpen };
+}
+
+export default async function DashboardPage() {
+  const user = await getCurrentUser();
+  const data = user ? await getLandlordData(user.id) : null;
+
+  const stats = {
+    tenants: data?.tenantCount ?? 0,
+    properties: data?.propertyCount ?? 0,
+    revenue: data?.monthlyRevenue ?? 0,
+    escrow: data?.escrowBalance ?? 0,
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Controls */}
@@ -24,49 +78,44 @@ export default function DashboardPage() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Total Tenants" value="1,245" trend="+12.5%" isPositive icon={<Users className="w-5 h-5 text-white" />} />
-        <StatCard title="Active Properties" value="48" trend="+2.4%" isPositive icon={<Home className="w-5 h-5 text-white" />} />
-        <StatCard title="Monthly Revenue" value="₦ 12.4M" trend="+8.1%" isPositive icon={<Wallet className="w-5 h-5 text-white" />} />
-        <StatCard title="Escrow Balance" value="₦ 3.2M" trend="-1.2%" isPositive={false} icon={<Building2 className="w-5 h-5 text-white" />} />
+        <StatCard title="Total Tenants" value={stats.tenants.toLocaleString()} trend="" isPositive icon={<Users className="w-5 h-5 text-white" />} />
+        <StatCard title="Active Properties" value={stats.properties.toLocaleString()} trend="" isPositive icon={<Home className="w-5 h-5 text-white" />} />
+        <StatCard title="Total Revenue" value={formatNaira(stats.revenue)} trend="" isPositive icon={<Wallet className="w-5 h-5 text-white" />} />
+        <StatCard title="Escrow Balance" value={formatNaira(stats.escrow)} trend="" isPositive icon={<Building2 className="w-5 h-5 text-white" />} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Chart / Graph Area */}
-        <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col min-h-[400px]">
+        {/* Stats overview panel */}
+        <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col min-h-[300px]">
           <div className="flex justify-between items-start mb-6">
             <div>
-              <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide">Average Tenant Score</h2>
+              <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide">Portfolio Overview</h2>
               <div className="flex items-baseline gap-3 mt-1">
-                <span className="text-4xl font-bold text-slate-800">84.5</span>
+                <span className="text-4xl font-bold text-slate-800">{stats.properties}</span>
                 <span className="text-sm font-medium text-[#10b981] flex items-center">
                   <TrendingUp className="w-4 h-4 mr-1" />
-                  High Credibility
+                  Properties Managed
                 </span>
               </div>
             </div>
-            <div className="bg-[#10b981] text-white px-3 py-1.5 rounded-lg text-sm font-semibold shadow-sm">
-              Current Month
+          </div>
+          <div className="grid grid-cols-2 gap-4 flex-1">
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Active Tenants</p>
+              <p className="text-2xl font-bold text-slate-800">{stats.tenants}</p>
             </div>
-          </div>
-          
-          {/* Decorative CSS Chart for MVP */}
-          <div className="flex-1 mt-8 flex items-end justify-between px-2 gap-2 sm:gap-4 relative h-48 border-b border-slate-100 pb-2">
-            {[40, 65, 45, 80, 55, 95, 75, 85, 60, 90, 70, 85].map((height, i) => (
-              <div key={i} className="w-full relative group flex justify-center">
-                <div 
-                  className="w-full max-w-[32px] bg-gradient-to-t from-[#10b981]/20 to-[#10b981]/80 rounded-t-sm group-hover:to-[#10b981] transition-all cursor-pointer"
-                  style={{ height: `${height}%` }}
-                >
-                  <div className="opacity-0 group-hover:opacity-100 absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs py-1 px-2 rounded shadow-lg whitespace-nowrap transition-opacity point-events-none">
-                    Score: {height}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="flex justify-between text-xs text-slate-400 mt-4 px-2 font-medium">
-            <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span>
-            <span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span><span>Nov</span><span>Dec</span>
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Open Maintenance</p>
+              <p className="text-2xl font-bold text-slate-800">{data?.maintenanceOpen ?? 0}</p>
+            </div>
+            <div className="p-4 bg-[#10b981]/5 rounded-2xl border border-[#10b981]/20">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Revenue Collected</p>
+              <p className="text-2xl font-bold text-[#10b981]">{formatNaira(stats.revenue)}</p>
+            </div>
+            <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Escrow Held</p>
+              <p className="text-2xl font-bold text-blue-600">{formatNaira(stats.escrow)}</p>
+            </div>
           </div>
         </div>
 
@@ -78,11 +127,23 @@ export default function DashboardPage() {
               View all
             </button>
           </div>
-          
           <div className="flex flex-col gap-4 flex-1">
-            <TenantCard name="Jenny Wilson" role="Commercial" score={98} img="https://i.pravatar.cc/150?img=5" />
-            <TenantCard name="Marvin McKinney" role="Residential" score={94} img="https://i.pravatar.cc/150?img=12" />
-            <TenantCard name="Dianne Russell" role="Corporate" score={91} img="https://i.pravatar.cc/150?img=9" />
+            {data?.topTenants && data.topTenants.length > 0 ? (
+              data.topTenants.map((tenant, i) => (
+                <TenantCard
+                  key={tenant.id}
+                  name={tenant.name}
+                  property={tenant.leases[0]?.unit?.property?.name ?? "Unknown"}
+                  score={Math.round(tenant.tenantScore?.totalScore ?? 0)}
+                  img={`https://i.pravatar.cc/150?u=${tenant.email}`}
+                />
+              ))
+            ) : (
+              <div className="flex flex-col items-center justify-center flex-1 text-slate-400">
+                <Users className="w-8 h-8 mb-2 opacity-30" />
+                <p className="text-sm">No tenants yet</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -101,15 +162,17 @@ function StatCard({ title, value, trend, isPositive, icon }: { title: string, va
       </div>
       <div className="flex items-baseline gap-3">
         <h3 className="text-2xl sm:text-3xl font-bold text-slate-800 tracking-tight">{value}</h3>
-        <span className={`text-sm font-semibold flex items-center ${isPositive ? 'text-[#10b981]' : 'text-rose-500'}`}>
-          {trend}
-        </span>
+        {trend && (
+          <span className={`text-sm font-semibold flex items-center ${isPositive ? 'text-[#10b981]' : 'text-rose-500'}`}>
+            {trend}
+          </span>
+        )}
       </div>
     </div>
   );
 }
 
-function TenantCard({ name, role, score, img }: { name: string, role: string, score: number, img: string }) {
+function TenantCard({ name, property, score, img }: { name: string, property: string, score: number, img: string }) {
   return (
     <div className="flex flex-col gap-3 p-4 rounded-xl border border-slate-100 hover:border-[#10b981]/30 hover:bg-[#10b981]/5 transition-all group">
       <div className="flex items-start justify-between">
@@ -120,21 +183,16 @@ function TenantCard({ name, role, score, img }: { name: string, role: string, sc
               <h4 className="font-bold text-slate-800 text-sm leading-tight">{name}</h4>
               <ShieldCheck className="w-4 h-4 text-[#10b981]" />
             </div>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs font-semibold px-2 py-0.5 bg-orange-100 text-orange-700 rounded-md">
-                {role}
-              </span>
-            </div>
+            <span className="text-xs font-semibold text-slate-400">{property}</span>
           </div>
         </div>
         <button className="text-slate-400 hover:text-slate-600">
           <MoreVertical className="w-5 h-5" />
         </button>
       </div>
-      
       <div className="grid grid-cols-2 gap-2 mt-2">
         <div className="bg-slate-50 rounded-lg p-2 border border-slate-100">
-          <p className="text-[10px] text-slate-500 font-semibold uppercase">Credibility</p>
+          <p className="text-[10px] text-slate-500 font-semibold uppercase">Score</p>
           <p className="font-bold text-slate-800 text-sm">{score}/100</p>
         </div>
         <div className="flex gap-2">
