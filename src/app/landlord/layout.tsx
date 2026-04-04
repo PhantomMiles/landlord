@@ -1,16 +1,22 @@
 import { Sidebar } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
+import { getCurrentUser } from "@/lib/auth";
 
-export default function LandlordLayout({
+export default async function LandlordLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const user = await getCurrentUser();
+
   return (
     <div className="flex bg-slate-50 min-h-screen">
       <Sidebar role="LANDLORD" />
       <div className="flex-1 flex flex-col pl-64 transition-all">
-        <Header role="LANDLORD" />
+        <Header 
+          role="LANDLORD" 
+          user={user ? { name: user.name, email: user.email } : undefined}
+        />
         <main className="flex-1 pt-24 p-8 relative">
           <div className="max-w-7xl mx-auto space-y-8 pb-12">
             {children}

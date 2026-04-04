@@ -3,13 +3,26 @@
 import { useState } from "react";
 import { Bell, MessageSquare, Search, ChevronDown, Settings, LogOut } from "lucide-react";
 import { ChatDrawer } from "@/components/ChatDrawer";
-import { getCurrentUser } from "@/lib/db";
 import { logoutAction } from "@/app/actions/actions-auth";
 
-export function Header({ role = "LANDLORD" }: { role?: "LANDLORD" | "TENANT" }) {
+interface HeaderUser {
+  name: string;
+  email: string;
+  avatar?: string;
+}
+
+export function Header({ 
+  role = "LANDLORD",
+  user
+}: { 
+  role?: "LANDLORD" | "TENANT";
+  user?: HeaderUser;
+}) {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const user = getCurrentUser(role);
+
+  const displayName = user?.name ?? (role === "LANDLORD" ? "Landlord" : "Tenant");
+  const avatarSrc = user?.avatar ?? `https://i.pravatar.cc/150?u=${user?.email ?? "default"}`;
 
   return (
     <>
@@ -47,16 +60,17 @@ export function Header({ role = "LANDLORD" }: { role?: "LANDLORD" | "TENANT" }) 
               className="flex items-center gap-3 pl-2 cursor-pointer group"
             >
               <div className="text-right hidden sm:block">
-                <p className="text-sm font-bold text-slate-800 leading-none">{user.name}</p>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter mt-1">{role === "LANDLORD" ? "Portfolio Manager" : "Active Tenant"}</p>
+                <p className="text-sm font-bold text-slate-800 leading-none">{displayName}</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter mt-1">
+                  {role === "LANDLORD" ? "Portfolio Manager" : "Active Tenant"}
+                </p>
               </div>
               <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden shadow-sm group-hover:shadow-md transition-all ring-2 ring-transparent group-hover:ring-[#10b981]/20">
-                <img src={user.avatar} alt="User Avatar" className="w-full h-full object-cover" />
+                <img src={avatarSrc} alt="User Avatar" className="w-full h-full object-cover" />
               </div>
               <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isProfileOpen ? 'rotate-180' : ''}`} />
             </div>
 
-            {/* Simple Dropdown */}
             {isProfileOpen && (
               <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 p-2 animate-in fade-in slide-in-from-top-2 duration-200">
                 <button 
