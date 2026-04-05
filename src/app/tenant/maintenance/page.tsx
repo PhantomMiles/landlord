@@ -1,12 +1,26 @@
-import { Plus, Clock, Briefcase, CheckCircle2, MessageSquare } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Clock, Briefcase, CheckCircle2, MessageSquare, Wrench } from "lucide-react";
+import { getCurrentUser } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { NewMaintenanceButton } from "@/components/NewMaintenanceButton";
 
-const REQUESTS = [
-  { id: "1", title: "Kitchen Sink Leak", date: "Mar 10, 2026", status: "IN_PROGRESS", priority: "MEDIUM" },
-  { id: "2", title: "AC Maintenance", date: "Jan 15, 2026", status: "RESOLVED", priority: "LOW" },
-];
+async function getTenantMaintenance(tenantId: string) {
+  return db.maintenanceRequest.findMany({
+    where: { tenantId },
+    include: {
+      unit: { include: { property: { select: { name: true } } } },
+      vendor: { select: { name: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+}
 
-export default function TenantMaintenance() {
+export default async function TenantMaintenance() {
+  const user = await getCurrentUser();
+  const requests = user ? await getTenantMaintenance(user.id) : [];
+
+  const active = requests.filter(r => r.status === "OPEN" || r.status === "IN_PROGRESS");
+  const resolved = requests.filter(r => r.status === "RESOLVED" || r.status === "CLOSED");
+
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-end">
@@ -14,50 +28,70 @@ export default function TenantMaintenance() {
           <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Maintenance</h1>
           <p className="text-slate-500 mt-1 text-sm font-medium">Report issues and track repair status.</p>
         </div>
-        <Button className="bg-[#10b981] hover:bg-[#0da673] text-white rounded-xl h-11 px-6 font-bold shadow-lg shadow-[#10b981]/20 transition-all hover:scale-105">
-          <Plus className="w-4 h-4 mr-2" />
-          New Request
-        </Button>
+        <NewMaintenanceButton />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8 space-y-6">
-          <h2 className="text-lg font-bold text-slate-800">Active Requests</h2>
+          <h2 className="text-lg font-bold text-slate-800">Active Requests ({active.length})</h2>
           <div className="space-y-4">
-            {REQUESTS.filter(r => r.status !== "RESOLVED").map(r => (
+            {active.length === 0 ? (
+              <div className="flex flex-col items-center py-8 text-slate-400">
+                <Wrench className="w-8 h-8 mb-2 opacity-30" />
+                <p className="text-sm">No active requests</p>
+              </div>
+            ) : active.map(r => (
               <div key={r.id} className="p-5 bg-amber-50 rounded-2xl border border-amber-100 flex items-start justify-between group cursor-pointer hover:bg-amber-100/50 transition-colors">
                 <div className="flex gap-4">
-                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-amber-500 shadow-sm">
+                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-amber-500 shadow-sm shrink-0">
                     <Clock className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="font-bold text-slate-800">{r.title}</p>
-                    <p className="text-xs text-slate-500 mt-1 font-medium">{r.date} • {r.priority} Priority</p>
+                    <p className="font-bold text-slate-800">{r.description}</p>
+                    <p className="text-xs text-slate-500 mt-1 font-medium">
+                      {r.unit.property.name} • Unit {r.unit.unitNumber}
+                    </p>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {new Date(r.createdAt).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}
+                      {r.vendor && ` • ${r.vendor.name}`}
+                    </p>
+                    <span className={`inline-block mt-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      r.status === "OPEN" ? "bg-rose-100 text-rose-600" : "bg-amber-100 text-amber-600"
+                    }`}>
+                      {r.status.replace("_", " ")}
+                    </span>
                   </div>
                 </div>
-                <button className="p-2 bg-white text-amber-600 rounded-lg hover:bg-amber-600 hover:text-white transition-all">
+                <button className="p-2 bg-white text-amber-600 rounded-lg hover:bg-amber-600 hover:text-white transition-all shrink-0">
                   <MessageSquare className="w-4 h-4" />
                 </button>
               </div>
             ))}
-            {REQUESTS.filter(r => r.status !== "RESOLVED").length === 0 && (
-              <p className="text-sm text-slate-400 text-center py-8">No active requests.</p>
-            )}
           </div>
         </div>
 
         <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8 space-y-6">
-          <h2 className="text-lg font-bold text-slate-800">History</h2>
+          <h2 className="text-lg font-bold text-slate-800">History ({resolved.length})</h2>
           <div className="space-y-4">
-            {REQUESTS.filter(r => r.status === "RESOLVED").map(r => (
-              <div key={r.id} className="p-5 bg-slate-50 rounded-2xl border border-slate-100 flex items-start justify-between opacity-70">
+            {resolved.length === 0 ? (
+              <div className="flex flex-col items-center py-8 text-slate-400">
+                <CheckCircle2 className="w-8 h-8 mb-2 opacity-30" />
+                <p className="text-sm">No resolved requests yet</p>
+              </div>
+            ) : resolved.map(r => (
+              <div key={r.id} className="p-5 bg-slate-50 rounded-2xl border border-slate-100 flex items-start justify-between opacity-80">
                 <div className="flex gap-4">
-                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-[#10b981] shadow-sm">
+                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-[#10b981] shadow-sm shrink-0">
                     <CheckCircle2 className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="font-bold text-slate-800">{r.title}</p>
-                    <p className="text-xs text-slate-500 mt-1 font-medium font-sans uppercase">Resolved Mar 12, 2026</p>
+                    <p className="font-bold text-slate-800">{r.description}</p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Resolved {new Date(r.updatedAt).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}
+                    </p>
+                    {r.cost && (
+                      <p className="text-xs text-slate-500 mt-0.5">Cost: ₦{r.cost.toLocaleString()}</p>
+                    )}
                   </div>
                 </div>
               </div>

@@ -1,60 +1,118 @@
-import { Wallet, ArrowDownLeft, ArrowUpRight, CheckCircle2 } from "lucide-react";
+import { ArrowDownLeft, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { getCurrentUser } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { formatNaira } from "@/lib/fees";
 
-export default function LandlordPayments() {
+async function getPaymentsData(landlordId: string) {
+  const [payments, escrowTotal, pendingTotal] = await Promise.all([
+    db.payment.findMany({
+      where: { lease: { unit: { property: { landlordId } } } },
+      include: {
+        tenant: { select: { name: true, email: true } },
+        lease: { include: { unit: { include: { property: { select: { name: true } } } } } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    }),
+    db.escrow.aggregate({
+      _sum: { amount: true },
+      where: { status: "HELD", lease: { unit: { property: { landlordId } } } },
+    }),
+    db.payment.aggregate({
+      _sum: { amount: true },
+      where: { status: "PENDING", lease: { unit: { property: { landlordId } } } },
+    }),
+  ]);
+
+  const revenue = payments
+    .filter(p => p.status === "COMPLETED")
+    .reduce((s, p) => s + p.amount, 0);
+
+  return {
+    payments,
+    revenue,
+    escrow: escrowTotal._sum.amount ?? 0,
+    pending: pendingTotal._sum.amount ?? 0,
+  };
+}
+
+const STATUS_STYLES: Record<string, string> = {
+  COMPLETED: "bg-green-50 text-green-600",
+  PENDING: "bg-amber-50 text-amber-600",
+  FAILED: "bg-rose-50 text-rose-600",
+  REFUNDED: "bg-slate-100 text-slate-500",
+};
+
+export default async function LandlordPayments() {
+  const user = await getCurrentUser();
+  const data = user ? await getPaymentsData(user.id) : { payments: [], revenue: 0, escrow: 0, pending: 0 };
+
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Portfolio Financials</h1>
-          <p className="text-slate-500 mt-1 text-sm font-medium">Track revenue, escrow balances, and disbursements.</p>
-        </div>
+      <div>
+        <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Portfolio Financials</h1>
+        <p className="text-slate-500 mt-1 text-sm font-medium">Track revenue, escrow balances, and disbursements.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-2">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Net Revenue (MTD)</p>
-          <p className="text-3xl font-bold text-[#10b981]">₦12,450,000</p>
-          <p className="text-xs text-slate-400">+8.5% from last month</p>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Revenue</p>
+          <p className="text-3xl font-bold text-[#10b981]">{formatNaira(data.revenue)}</p>
+          <p className="text-xs text-slate-400">All completed payments</p>
         </div>
         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-2">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pending Settlements</p>
-          <p className="text-3xl font-bold text-slate-800">₦2,100,000</p>
-          <p className="text-xs text-amber-500 font-bold">Disbursing in 2 days</p>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pending</p>
+          <p className="text-3xl font-bold text-slate-800">{formatNaira(data.pending)}</p>
+          <p className="text-xs text-amber-500 font-bold flex items-center gap-1">
+            <Clock className="w-3 h-3" /> Awaiting settlement
+          </p>
         </div>
         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-2">
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Escrow Total</p>
-          <p className="text-3xl font-bold text-blue-500">₦5,400,000</p>
-          <p className="text-xs text-slate-400 font-sans uppercase">Held for Security Deposits</p>
+          <p className="text-3xl font-bold text-blue-500">{formatNaira(data.escrow)}</p>
+          <p className="text-xs text-slate-400 uppercase">Held for Security Deposits</p>
         </div>
       </div>
 
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-          <h2 className="font-bold text-slate-800">Recent Revenue</h2>
-          <button className="text-xs font-bold text-[#10b981]">View All Financials</button>
+          <h2 className="font-bold text-slate-800">Transaction History</h2>
+          <span className="text-xs text-slate-400">{data.payments.length} transactions</span>
         </div>
-        <div className="divide-y divide-slate-100">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center text-green-600">
-                  <ArrowDownLeft className="w-5 h-5" />
+        {data.payments.length === 0 ? (
+          <div className="py-16 text-center text-slate-400">
+            <p className="font-medium">No transactions yet</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {data.payments.map((p) => (
+              <div key={p.id} className="px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center text-green-600">
+                    <ArrowDownLeft className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-slate-700 text-sm">
+                      {p.type} — {p.tenant.name}
+                    </p>
+                    <p className="text-xs text-slate-400 font-medium">
+                      {p.lease?.unit?.property?.name ?? "—"} •{" "}
+                      {new Date(p.createdAt).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-bold text-slate-700 text-sm">Rent - Unit {200 + i}</p>
-                  <p className="text-xs text-slate-400 font-medium">Mar {10 + i}, 2026</p>
+                <div className="text-right">
+                  <p className="font-bold text-slate-800 text-sm">{formatNaira(p.amount)}</p>
+                  <span className={`inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full ${STATUS_STYLES[p.status] ?? "bg-slate-100 text-slate-500"}`}>
+                    {p.status === "COMPLETED" && <CheckCircle2 className="w-3 h-3" />}
+                    {p.status === "FAILED" && <XCircle className="w-3 h-3" />}
+                    {p.status}
+                  </span>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="font-bold text-slate-800 text-sm">₦450,000</p>
-                <div className="flex items-center gap-1 justify-end mt-1">
-                  <span className="text-[9px] font-bold text-[#10b981] uppercase tracking-tighter">Settled</span>
-                  <CheckCircle2 className="w-3 h-3 text-[#10b981]" />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
