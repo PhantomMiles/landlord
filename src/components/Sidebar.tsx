@@ -38,14 +38,14 @@ export function Sidebar({ role = "LANDLORD" }: { role?: "LANDLORD" | "TENANT" })
   return (
     <aside className="fixed left-0 top-0 w-64 h-screen bg-[#0A1428] text-slate-400 flex flex-col shrink-0 border-r border-[#152342] shadow-xl z-30">
       {/* Logo Area */}
-      <div className="h-20 flex items-center px-6 border-b border-[#152342]/50">
+      <div className="h-20 flex my-8 items-center px-6 border-b border-[#152342]/50">
         <Link href="/" className="flex items-center gap-3">
           <Image 
             src="/logo.png" 
             alt=" Logo" 
             width={100} 
             height={30} 
-            className="object-contain my-8"
+            className="object-contain"
             priority
           />
         </Link>
