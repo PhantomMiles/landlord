@@ -42,10 +42,10 @@ export function Sidebar({ role = "LANDLORD" }: { role?: "LANDLORD" | "TENANT" })
         <Link href="/" className="flex items-center gap-3">
           <Image 
             src="/logo.png" 
-            alt="Real Estate Platform Logo" 
-            width={120} 
-            height={36} 
-            className="object-contain"
+            alt=" Logo" 
+            width={100} 
+            height={30} 
+            className="object-contain my-4"
             priority
           />
         </Link>
