@@ -36,7 +36,7 @@ function LoginForm() {
         <div className="w-12 h-12 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl flex items-center justify-center mb-3 shadow-2xl">
           <img src="/logo.png" alt="Landlord logo" className="w-8 h-8 object-contain" />
         </div>
-        <h1 className="text-2xl font-bold text-white tracking-tight italic">Landlord</h1>
+        <h1 className="text-2xl font-bold text-white tracking-tight">LANDLORD</h1>
         <p className="text-slate-400 mt-1 text-center text-xs font-medium">Secure Real Estate Management</p>
       </div>
 
