@@ -45,7 +45,7 @@ export function Sidebar({ role = "LANDLORD" }: { role?: "LANDLORD" | "TENANT" })
             alt=" Logo" 
             width={100} 
             height={30} 
-            className="object-contain my-4"
+            className="object-contain my-8"
             priority
           />
         </Link>
