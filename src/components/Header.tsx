@@ -26,9 +26,9 @@ export function Header({
 
   return (
     <>
-      <header className="fixed top-0 right-0 left-64 h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 z-50 flex items-center justify-between px-8 transition-all">
+      <header className="fixed top-0 right-0 left-0 md:left-64 h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 z-50 flex items-center justify-between px-4 md:px-8 transition-all">
         {/* Search Area */}
-        <div className="relative group w-96">
+        <div className="relative group w-full max-w-xs hidden sm:block">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#10b981] transition-colors" />
           <input 
             type="text" 
