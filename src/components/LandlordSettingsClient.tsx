@@ -169,14 +169,14 @@ export function LandlordSettingsClient({ profile }: { profile: Profile | null })
       </div>
 
       {/* Danger Zone */}
-      <div className="bg-rose-50/50 rounded-3xl border border-rose-100 p-8 flex items-center justify-between">
+      <div className="bg-rose-50/50 rounded-3xl border border-rose-100 p-8 flex flex-col md:flex-row items-center justify-between">
         <div>
           <h2 className="font-bold text-rose-900">Delete Account</h2>
           <p className="text-sm text-rose-700/70 mt-1">Irreversibly remove all property and financial data.</p>
         </div>
         <button
           onClick={() => setIsDeleteModalOpen(true)}
-          className="flex items-center gap-2 px-6 py-2.5 bg-rose-500 text-white rounded-xl font-bold shadow-lg shadow-rose-500/20 hover:bg-rose-600 transition-all hover:scale-105"
+          className="flex items-center gap-2 mt-4 md:mt-0 px-6 py-2.5 bg-rose-500 text-white rounded-xl font-bold shadow-lg shadow-rose-500/20 hover:bg-rose-600 transition-all hover:scale-105"
         >
           <Trash2 className="w-4 h-4" />
           Delete Portfolio
