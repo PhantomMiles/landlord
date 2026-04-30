@@ -39,15 +39,15 @@ export default async function LandlordTenants() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col gap-2 md:flex-row justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Tenants & Scoring</h1>
           <p className="text-slate-500 mt-1 text-sm font-medium">Monitor tenant credibility and portfolio health.</p>
         </div>
-        <div className="flex gap-3">
-          <div className="relative group">
+        <div className="flex gap-3 w-full md:w-auto">
+          <div className="relative w-full md:w-auto group">
             <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-            <input type="text" placeholder="Search tenants..." className="bg-white border border-slate-200 rounded-xl py-2 pl-9 pr-4 text-sm focus:ring-2 focus:ring-[#10b981]/10 outline-none" />
+            <input type="text" placeholder="Search tenants..." className="bg-white w-full md:w-auto border border-slate-200 rounded-xl py-2 pl-9 pr-4 text-sm focus:ring-2 focus:ring-[#10b981]/10 outline-none" />
           </div>
           <button className="p-2 border border-slate-200 rounded-xl bg-white text-slate-500 hover:bg-slate-50">
             <Filter className="w-4 h-4" />
