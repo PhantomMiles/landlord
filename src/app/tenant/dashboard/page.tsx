@@ -45,7 +45,7 @@ export default async function TenantDashboard() {
     : null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10 mt-20">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-slate-800 tracking-tight">My Dashboard</h1>
