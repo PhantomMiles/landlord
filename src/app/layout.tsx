@@ -19,7 +19,7 @@ const lato = Lato({
 });
 
 export const metadata: Metadata = {
-  title: "Dashboard - Real Estate SaaS",
+  title: "LANDLORD Real Estate",
   description: "Manage your properties, tenants, and finances.",
 };
 
