@@ -42,14 +42,14 @@ export default async function TenantPayments() {
     : null;
 
   return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-end">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Payments & Billing</h1>
+    <div className="space-y-8 md:mt-20 mt-5">
+      <div className="flex justify-between items-center gap-4">
+        <div className="min-w-0">
+          <h1 className="text-3xl font-bold text-slate-800 tracking-tight whitespace-nowrap">Payments & Billing</h1>
           <p className="text-slate-500 mt-1 text-sm font-medium">Manage your rent, deposits, and transaction history.</p>
         </div>
-        <button className="flex items-center gap-2 bg-[#10b981] hover:bg-[#0da673] text-white rounded-xl h-11 px-6 font-bold shadow-lg shadow-[#10b981]/20 transition-all hover:scale-105">
-          <CreditCard className="w-4 h-4" />
+        <button className="flex items-center gap-2 cursor-pointer bg-[#10b981] hover:bg-[#0da673] text-white rounded-xl px-5 py-2.5 font-bold shadow-lg shadow-[#10b981]/20 transition-all hover:scale-105 whitespace-nowrap text-sm shrink-0">
+          <CreditCard className="w-4 h-4 shrink-0" />
           Pay Current Rent
         </button>
       </div>
