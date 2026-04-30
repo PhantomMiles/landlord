@@ -19,6 +19,7 @@ const lato = Lato({
 });
 
 export const metadata: Metadata = {
+  icons: "/logo.png",
   title: "LANDLORD Real Estate",
   description: "Manage your properties, tenants, and finances.",
 };
